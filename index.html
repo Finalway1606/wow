@@ -81,25 +81,35 @@
     let stats = {};
     let users = [];
 
-    const endpoint = 'https://api.npoint.io/7e6a70afb24e5542671c';
+    const JSONBIN_ENDPOINT = 'https://api.jsonbin.io/v3/b/688276d2ae596e708fbb30d0';
+    const API_KEY = '$2a$10$0wgbqWh8esrHLuiDPFo.q.O5/Zr8kDX/oT7sd5.QnMiGqFWYDsjnm';
 
     function loadSharedData() {
-      fetch(endpoint)
+      fetch(JSONBIN_ENDPOINT, {
+        headers: {
+          'X-Master-Key': API_KEY
+        }
+      })
         .then(res => res.json())
         .then(data => {
-          stats = data.stats || {};
-          users = data.users || [];
+          stats = data.record.stats || {};
+          users = data.record.users || [];
           updateStatsDisplay();
           loadResultsTable();
-        });
+        })
+        .catch(err => console.error('Błąd przy ładowaniu:', err));
     }
 
     function syncSharedData() {
-      fetch(endpoint, {
+      fetch(JSONBIN_ENDPOINT, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': API_KEY,
+          'X-Bin-Private': false
+        },
         body: JSON.stringify({ stats, users })
-      });
+      }).catch(err => console.error('Błąd przy zapisie:', err));
     }
 
     const classContainer = document.getElementById('classCheckboxes');
