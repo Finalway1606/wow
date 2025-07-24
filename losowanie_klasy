@@ -13,14 +13,20 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #444; padding: 8px; text-align: center; }
     th { background-color: #333; }
-    button { padding: 10px 20px; cursor: pointer; background-color: #444; color: white; border: none; }
+    button { padding: 10px 20px; cursor: pointer; background-color: #444; color: white; border: none; margin-top: 10px; }
     button:hover { background-color: #666; }
+    input[type='text'] { padding: 5px; margin-bottom: 10px; width: 200px; }
   </style>
 </head>
 <body>
   <h1>Wybierz klasę i rasę - WoW Classic</h1>
 
   <form id="selectionForm">
+    <div class="form-section">
+      <h3>Nick gracza:</h3>
+      <input type="text" id="nickname" placeholder="Wpisz swój nick" required />
+    </div>
+
     <div class="form-section">
       <h3>Klasy:</h3>
       <div class="checkbox-group" id="classCheckboxes"></div>
@@ -32,12 +38,14 @@
     </div>
 
     <button type="submit">Zapisz wybór</button>
+    <button type="button" id="resetButton">Resetuj dane</button>
   </form>
 
   <h2>Wyniki:</h2>
   <table id="resultsTable">
     <thead>
       <tr>
+        <th>Nick</th>
         <th>Klasa</th>
         <th>Rasa</th>
       </tr>
@@ -70,11 +78,34 @@
       'Troll': ['Warrior', 'Hunter', 'Rogue', 'Priest', 'Shaman', 'Mage', 'Warlock']
     };
 
-    const stats = {};
+    let stats = {};
+    let users = [];
+
+    const endpoint = 'https://api.npoint.io/7e6a70afb24e5542671c';
+
+    function loadSharedData() {
+      fetch(endpoint)
+        .then(res => res.json())
+        .then(data => {
+          stats = data.stats || {};
+          users = data.users || [];
+          updateStatsDisplay();
+          loadResultsTable();
+        });
+    }
+
+    function syncSharedData() {
+      fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stats, users })
+      });
+    }
 
     const classContainer = document.getElementById('classCheckboxes');
     const raceContainer = document.getElementById('raceCheckboxes');
     const statsList = document.getElementById('statsList');
+    const resultsTable = document.querySelector('#resultsTable tbody');
 
     function createCheckbox(name, groupName) {
       const label = document.createElement('label');
@@ -90,14 +121,9 @@
 
     function enforceSingleSelection(groupName) {
       const checkboxes = document.querySelectorAll(`input[name='${groupName}']`);
-      let selected = 0;
       checkboxes.forEach(cb => {
-        if (cb.checked) selected++;
+        if (cb !== event.target) cb.checked = false;
       });
-      if (selected > 1) {
-        alert('Można wybrać tylko jedną opcję z każdej grupy.');
-        event.target.checked = false;
-      }
     }
 
     function updateStatsDisplay() {
@@ -109,16 +135,26 @@
       });
     }
 
+    function loadResultsTable() {
+      resultsTable.innerHTML = '';
+      users.forEach(({ nickname, race, cls }) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${nickname}</td><td>${cls}</td><td>${race}</td>`;
+        resultsTable.appendChild(row);
+      });
+    }
+
     wowClasses.forEach(cls => classContainer.appendChild(createCheckbox(cls, 'class')));
     wowRaces.forEach(race => raceContainer.appendChild(createCheckbox(race, 'race')));
 
     document.getElementById('selectionForm').addEventListener('submit', function(e) {
       e.preventDefault();
+      const nickname = document.getElementById('nickname').value.trim();
       const selectedClass = document.querySelector("input[name='class']:checked");
       const selectedRace = document.querySelector("input[name='race']:checked");
 
-      if (!selectedClass || !selectedRace) {
-        alert('Proszę wybrać jedną klasę i jedną rasę.');
+      if (!nickname || !selectedClass || !selectedRace) {
+        alert('Proszę podać nick, wybrać jedną klasę i jedną rasę.');
         return;
       }
 
@@ -130,21 +166,33 @@
 
       const comboKey = `${selectedRace.value} ${selectedClass.value}`;
       stats[comboKey] = (stats[comboKey] || 0) + 1;
+      users.push({ nickname, race: selectedRace.value, cls: selectedClass.value });
+
       updateStatsDisplay();
+      loadResultsTable();
+      syncSharedData();
 
-      const table = document.querySelector('#resultsTable tbody');
-      const row = document.createElement('tr');
-      const classCell = document.createElement('td');
-      classCell.textContent = selectedClass.value;
-      const raceCell = document.createElement('td');
-      raceCell.textContent = selectedRace.value;
-      row.appendChild(classCell);
-      row.appendChild(raceCell);
-      table.appendChild(row);
-
+      document.getElementById('nickname').value = '';
       selectedClass.checked = false;
       selectedRace.checked = false;
     });
+
+    document.getElementById('resetButton').addEventListener('click', function() {
+      const password = prompt('Podaj hasło, aby zresetować dane:');
+      if (password === 'Mantas123') {
+        if (confirm('Na pewno chcesz zresetować wszystkie dane?')) {
+          stats = {};
+          users = [];
+          updateStatsDisplay();
+          loadResultsTable();
+          syncSharedData();
+        }
+      } else {
+        alert('Nieprawidłowe hasło.');
+      }
+    });
+
+    loadSharedData();
   </script>
 </body>
 </html>
