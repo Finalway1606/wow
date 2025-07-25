@@ -2,20 +2,106 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WoW Classic - Wybierz klasę i rasę</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: #f0f0f0; }
-    h1 { color: #ffd700; }
-    .form-section { margin-bottom: 20px; }
-    .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
-    label { display: flex; align-items: center; gap: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #444; padding: 8px; text-align: center; }
-    th { background-color: #333; }
-    button { padding: 10px 20px; cursor: pointer; background-color: #444; color: white; border: none; margin-top: 10px; }
-    button:hover { background-color: #666; }
-    input[type='text'] { padding: 5px; margin-bottom: 10px; width: 200px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #f0f0f0;
+      margin: 0;
+    }
+    h1 {
+      color: #ffd700;
+      margin-bottom: 20px;
+    }
+    .form-section {
+      margin-bottom: 20px;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #333;
+    }
+    button {
+      padding: 10px 20px;
+      cursor: pointer;
+      background-color: #444;
+      color: white;
+      border: none;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #666;
+    }
+    input[type='text'] {
+      padding: 5px;
+      margin-bottom: 10px;
+      width: 200px;
+    }
+
+    /* Kontener na wyniki i statystyki obok siebie */
+    .results-stats-container {
+      display: flex;
+      gap: 40px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    /* Blok wyników - tabela */
+    .results-container {
+      flex: 1 1 400px;
+      min-width: 300px;
+    }
+    /* Blok statystyk i diagramu */
+    .stats-container {
+      flex: 1 1 400px;
+      min-width: 300px;
+    }
+
+    /* Styl dla lidera */
+    #currentLeader {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      background-color: #ffd700;
+      color: #1a1a1a;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #ffd700aa;
+      text-align: center;
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      user-select: none;
+    }
+
+    /* Canvas diagramu */
+    #statsChart {
+      width: 100% !important;
+      height: 300px !important;
+      background-color: #222;
+      border-radius: 8px;
+      box-shadow: 0 0 8px #444;
+    }
   </style>
 </head>
 <body>
@@ -41,20 +127,34 @@
     <button type="button" id="resetButton">Resetuj dane</button>
   </form>
 
-  <h2>Wyniki:</h2>
-  <table id="resultsTable">
-    <thead>
-      <tr>
-        <th>Nick</th>
-        <th>Klasa</th>
-        <th>Rasa</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <!-- Aktualny lider głosowania -->
+  <h2>Aktualny lider głosowania:</h2>
+  <div id="currentLeader">Brak głosów</div>
 
-  <h2>Statystyki:</h2>
-  <ul id="statsList"></ul>
+  <div class="results-stats-container">
+    <div class="results-container">
+      <h2>Wyniki:</h2>
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Nick</th>
+            <th>Klasa</th>
+            <th>Rasa</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="stats-container">
+      <h2>Statystyki:</h2>
+      <canvas id="statsChart"></canvas>
+      <ul id="statsList"></ul>
+    </div>
+  </div>
+
+  <!-- Chart.js z CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
     const wowClasses = [
@@ -84,20 +184,65 @@
     const JSONBIN_ENDPOINT = 'https://api.jsonbin.io/v3/b/688276d2ae596e708fbb30d0';
     const API_KEY = '$2a$10$0wgbqWh8esrHLuiDPFo.q.O5/Zr8kDX/oT7sd5.QnMiGqFWYDsjnm';
 
+    // Inicjalizacja wykresu Chart.js
+    const ctx = document.getElementById('statsChart').getContext('2d');
+    let chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Liczba głosów',
+          data: [],
+          backgroundColor: 'rgba(255, 215, 0, 0.7)', // złoty
+          borderColor: 'rgba(255, 215, 0, 1)',
+          borderWidth: 1,
+          borderRadius: 5,
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: '#f0f0f0'
+            },
+            grid: {
+              color: '#444'
+            }
+          },
+          x: {
+            ticks: {
+              color: '#f0f0f0',
+              maxRotation: 90,
+              minRotation: 45,
+            },
+            grid: {
+              display: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: { color: '#ffd700' }
+          }
+        }
+      }
+    });
+
     function loadSharedData() {
       fetch(JSONBIN_ENDPOINT, {
-        headers: {
-          'X-Master-Key': API_KEY
-        }
+        headers: { 'X-Master-Key': API_KEY }
       })
-        .then(res => res.json())
-        .then(data => {
-          stats = data.record.stats || {};
-          users = data.record.users || [];
-          updateStatsDisplay();
-          loadResultsTable();
-        })
-        .catch(err => console.error('Błąd przy ładowaniu:', err));
+      .then(res => res.json())
+      .then(data => {
+        stats = data.record.stats || {};
+        users = data.record.users || [];
+        updateStatsDisplay();
+        loadResultsTable();
+        updateLeader();
+      })
+      .catch(err => console.error('Błąd przy ładowaniu:', err));
     }
 
     function syncSharedData() {
@@ -116,6 +261,7 @@
     const raceContainer = document.getElementById('raceCheckboxes');
     const statsList = document.getElementById('statsList');
     const resultsTable = document.querySelector('#resultsTable tbody');
+    const currentLeaderDiv = document.getElementById('currentLeader');
 
     function createCheckbox(name, groupName) {
       const label = document.createElement('label');
@@ -143,6 +289,15 @@
         li.textContent = `${key} - ${count}`;
         statsList.appendChild(li);
       });
+
+      // Aktualizacja wykresu
+      const labels = Object.keys(stats);
+      const data = Object.values(stats);
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = data;
+      chart.update();
+
+      updateLeader();
     }
 
     function loadResultsTable() {
@@ -154,6 +309,24 @@
       });
     }
 
+    // Aktualizacja lidera na podstawie statystyk
+    function updateLeader() {
+      if (Object.keys(stats).length === 0) {
+        currentLeaderDiv.textContent = 'Brak głosów';
+        return;
+      }
+      let maxVotes = 0;
+      let leader = '';
+      for (const [combo, count] of Object.entries(stats)) {
+        if (count > maxVotes) {
+          maxVotes = count;
+          leader = combo;
+        }
+      }
+      currentLeaderDiv.textContent = `${leader} z ${maxVotes} głosami`;
+    }
+
+    // Dodaj checkboxy
     wowClasses.forEach(cls => classContainer.appendChild(createCheckbox(cls, 'class')));
     wowRaces.forEach(race => raceContainer.appendChild(createCheckbox(race, 'race')));
 
