@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WoW Classic - Wybierz klasę i rasę</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,6 +15,31 @@
       color: #f0f0f0;
       margin: 0;
     }
+
+    .social-icons {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .social-icons a {
+      color: #ffd700;
+      margin-left: 10px;
+      font-size: 1.5em;
+      text-decoration: none;
+    }
+
+    .info-banner {
+      background-color: #333;
+      color: #ffd700;
+      padding: 10px 20px;
+      border-radius: 8px;
+      margin-top: 70px;
+      margin-bottom: 20px;
+      font-size: 1.1em;
+      box-shadow: 0 0 10px #000;
+    }
+
     h1 {
       color: #ffd700;
       margin-bottom: 20px;
@@ -61,25 +88,23 @@
       width: 200px;
     }
 
-    /* Kontener na wyniki i statystyki obok siebie */
     .results-stats-container {
       display: flex;
       gap: 40px;
       margin-top: 20px;
       flex-wrap: wrap;
     }
-    /* Blok wyników - tabela */
+
     .results-container {
       flex: 1 1 400px;
       min-width: 300px;
     }
-    /* Blok statystyk i diagramu */
+
     .stats-container {
       flex: 1 1 400px;
       min-width: 300px;
     }
 
-    /* Styl dla lidera */
     #currentLeader {
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
@@ -94,7 +119,6 @@
       user-select: none;
     }
 
-    /* Canvas diagramu */
     #statsChart {
       width: 100% !important;
       height: 300px !important;
@@ -104,7 +128,19 @@
     }
   </style>
 </head>
+
 <body>
+  <div class="social-icons">
+  <a href="https://discord.gg/AW3kEsP2Jq" target="_blank" title="Discord"><i class="fab fa-discord"></i></a>
+  <a href="https://www.tiktok.com/@kranik1606" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>
+  <a href="https://www.twitch.tv/kranik1606" target="_blank" title="Twitch"><i class="fab fa-twitch"></i></a>
+  <a href="https://www.kick.com/kranik1606" target="_blank" title="Kick"><i class="fa-solid fa-play"></i></a>
+</div>
+
+  <div class="info-banner">
+    To ankieta, na podstawie której <strong>Kranik1606</strong> będzie wybierał postać do <strong>WoW Classic Hardcore</strong>.
+  </div>
+
   <h1>Wybierz klasę i rasę - WoW Classic</h1>
 
   <form id="selectionForm">
@@ -127,7 +163,6 @@
     <button type="button" id="resetButton">Resetuj dane</button>
   </form>
 
-  <!-- Aktualny lider głosowania -->
   <h2>Aktualny lider głosowania:</h2>
   <div id="currentLeader">Brak głosów</div>
 
@@ -153,7 +188,6 @@
     </div>
   </div>
 
-  <!-- Chart.js z CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
@@ -184,7 +218,6 @@
     const JSONBIN_ENDPOINT = 'https://api.jsonbin.io/v3/b/688276d2ae596e708fbb30d0';
     const API_KEY = '$2a$10$0wgbqWh8esrHLuiDPFo.q.O5/Zr8kDX/oT7sd5.QnMiGqFWYDsjnm';
 
-    // Inicjalizacja wykresu Chart.js
     const ctx = document.getElementById('statsChart').getContext('2d');
     let chart = new Chart(ctx, {
       type: 'bar',
@@ -193,7 +226,7 @@
         datasets: [{
           label: 'Liczba głosów',
           data: [],
-          backgroundColor: 'rgba(255, 215, 0, 0.7)', // złoty
+          backgroundColor: 'rgba(255, 215, 0, 0.7)',
           borderColor: 'rgba(255, 215, 0, 1)',
           borderWidth: 1,
           borderRadius: 5,
@@ -204,28 +237,16 @@
         scales: {
           y: {
             beginAtZero: true,
-            ticks: {
-              color: '#f0f0f0'
-            },
-            grid: {
-              color: '#444'
-            }
+            ticks: { color: '#f0f0f0' },
+            grid: { color: '#444' }
           },
           x: {
-            ticks: {
-              color: '#f0f0f0',
-              maxRotation: 90,
-              minRotation: 45,
-            },
-            grid: {
-              display: false
-            }
+            ticks: { color: '#f0f0f0', maxRotation: 90, minRotation: 45 },
+            grid: { display: false }
           }
         },
         plugins: {
-          legend: {
-            labels: { color: '#ffd700' }
-          }
+          legend: { labels: { color: '#ffd700' } }
         }
       }
     });
@@ -290,11 +311,8 @@
         statsList.appendChild(li);
       });
 
-      // Aktualizacja wykresu
-      const labels = Object.keys(stats);
-      const data = Object.values(stats);
-      chart.data.labels = labels;
-      chart.data.datasets[0].data = data;
+      chart.data.labels = Object.keys(stats);
+      chart.data.datasets[0].data = Object.values(stats);
       chart.update();
 
       updateLeader();
@@ -309,7 +327,6 @@
       });
     }
 
-    // Aktualizacja lidera na podstawie statystyk
     function updateLeader() {
       if (Object.keys(stats).length === 0) {
         currentLeaderDiv.textContent = 'Brak głosów';
@@ -326,7 +343,6 @@
       currentLeaderDiv.textContent = `${leader} z ${maxVotes} głosami`;
     }
 
-    // Dodaj checkboxy
     wowClasses.forEach(cls => classContainer.appendChild(createCheckbox(cls, 'class')));
     wowRaces.forEach(race => raceContainer.appendChild(createCheckbox(race, 'race')));
 
